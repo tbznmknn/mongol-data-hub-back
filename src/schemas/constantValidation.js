@@ -1,0 +1,9 @@
+const { z } = require("zod");
+exports.requiredString = z.string().trim().min(1, "Enter string");
+exports.requiredNumber = z.number();
+exports.requiredBoolean = z.boolean();
+exports.requiredDate = z.string().date();
+exports.optionalString = z.string().optional();
+exports.optionalNumber = z.number().optional();
+exports.optionalBoolean = z.boolean().optional();
+exports.optionalDate = z.date().optional();

@@ -1,0 +1,205 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+// Нийт хэрэглэгчид
+model User {
+  id                   Int         @id @default(autoincrement())
+  hashedPassword       String?
+  firstName            String
+  lastName             String
+  email                String      @unique
+  role                 UserRole    @default(USER)
+  phone                String?
+  createdAt            DateTime    @default(now())
+  modifiedAt           DateTime    @updatedAt
+  emailVerified        DateTime?
+  image                String?
+  oneTimePasswordToken String?
+  // accounts        Account[]             // Оах хэрэглэгчидтэй холбоотой
+  CompanyCreatedBy     Companies[] @relation("CompanyCreatedBy")
+  CompanyUpdatedBy     Companies[] @relation("CompanyUpdatedBy")
+  PostCreatedBy        Posts[]     @relation("PostCreatedBy")
+  PostUpdatedBy        Posts[]     @relation("PostUpdatedBy")
+
+  @@index([email])
+}
+
+model DataBeforeVerification {
+  id             Int      @id @default(autoincrement())
+  firstName      String?
+  lastName       String?
+  phone          String?
+  email          String?
+  hashedPassword String?
+  action         String?
+  createdAt      DateTime @default(now())
+
+  @@unique([email, action])
+  @@map("data_before_verification")
+}
+
+model VerificationToken {
+  id      String   @default(cuid())
+  email   String
+  token   String
+  expires DateTime
+  action  String
+
+  @@unique([email, token, action])
+  @@map("verificationtokens")
+}
+
+enum UserRole {
+  USER
+  COMPANY
+  ADMIN
+  SUPERADMIN
+}
+
+enum ProviderType {
+  GOOGLE
+  FACEBOOK
+}
+
+model Companies {
+  id        Int      @id @default(autoincrement())
+  name      String   @unique
+  link      String?
+  picture   String?
+  summary   String   @db.VarChar(100)
+  email     String
+  address   String
+  phone     String
+  content   String   @db.LongText
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  createdBy Int?
+  updatedBy Int?
+
+  creator           User?           @relation("CompanyCreatedBy", fields: [createdBy], references: [id])
+  editor            User?           @relation("CompanyUpdatedBy", fields: [updatedBy], references: [id])
+  OccupationType    OccupationType  @relation(fields: [occupationTypeId], references: [id])
+  occupationTypeId  Int
+  AffiliationType   AffiliationType @relation(fields: [affiliationTypeId], references: [id])
+  affiliationTypeId Int
+}
+
+model OccupationType {
+  id        Int         @id @default(autoincrement())
+  name      String      @unique
+  items     Companies[]
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+}
+
+model AffiliationType {
+  id          Int         @id @default(autoincrement())
+  name        String      @unique
+  description String
+  items       Companies[]
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+}
+
+model MemberType {
+  id          Int       @id @default(autoincrement())
+  name        String
+  description String?
+  items       Members[]
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
+model Members {
+  id           Int        @id @default(autoincrement())
+  name         String
+  memberTypeId Int
+  occupation   String
+  picture      String?
+  email        String
+  phone        String
+  content      String     @db.LongText
+  memberType   MemberType @relation(fields: [memberTypeId], references: [id])
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+  hideMail     Boolean    @default(true)
+  hidePhone    Boolean    @default(true)
+}
+model ProductType {
+  id          Int       @id @default(autoincrement())
+  name        String
+  description String?
+  items       Product[]
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
+model Product {
+  id           Int        @id @default(autoincrement())
+  name         String
+  productTypeId Int
+  picture      String?
+  email        String
+  phone        String
+  price        Decimal
+  content      String     @db.LongText
+  productType   ProductType @relation(fields: [productTypeId], references: [id])
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+
+}
+model Timeline {
+  id          Int      @id @default(autoincrement())
+  name        String //short into
+  description String
+  year        Int      @unique
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+
+
+enum PostTypes {
+  ADVICE
+  NEWS
+  COURSES
+  RULES
+  VISIONS
+  MEMBERPOST
+}
+
+model Posts {
+  id        Int       @id @default(autoincrement())
+  name      String    @unique
+  picture   String?
+  content   String    @db.LongText
+  category  PostTypes
+  summary   String    @db.VarChar(100)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  createdBy Int?
+  updatedBy Int?
+  creator   User?     @relation("PostCreatedBy", fields: [createdBy], references: [id])
+  editor    User?     @relation("PostUpdatedBy", fields: [updatedBy], references: [id])
+}
+
+model StaticData {
+  id           Int        @id @default(autoincrement())
+  purpose String @unique
+  title String @unique 
+  name         String?
+  description String?  @db.LongText
+  picture      String?
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+  @@index([title])
+}
+generator erd {
+  provider = "prisma-erd-generator"
+  output   = "./ERD/erd.pdf"
+  format   = "pdf"
+}
